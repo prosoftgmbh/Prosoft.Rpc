@@ -5,6 +5,8 @@
     <Company>ProSoft Software-Entwicklung GmbH</Company>
     <RepositoryUrl>https://github.com/prosoftgmbh/Prosoft.Rpc</RepositoryUrl>
     <Version>1.0.6</Version>
+    <AssemblyVersion>1.0.7.0</AssemblyVersion>
+    <FileVersion>1.0.7.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -43,7 +43,7 @@ namespace Prosoft.Rpc
 
                 var request = WebRequest.CreateHttp(requestUri);
                 request.Method = "POST";
-                request.Timeout = 60000;
+                request.Timeout = 300000;
 
                 if (_sessionId != Guid.Empty)
                 {
