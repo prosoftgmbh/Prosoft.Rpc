@@ -23,6 +23,8 @@ namespace Prosoft.Rpc
             _sessionId = (Guid)sessionId;
         }
 
+        public static int Timeout { get; set; } = 300000;
+
         protected object Invoke(string methodName, params object[] parameters)
         {
             var method = _contractType.GetMethod(methodName);
@@ -43,7 +45,7 @@ namespace Prosoft.Rpc
 
                 var request = WebRequest.CreateHttp(requestUri);
                 request.Method = "POST";
-                request.Timeout = 300000;
+                request.Timeout = Timeout;
 
                 if (_sessionId != Guid.Empty)
                 {
@@ -83,8 +85,7 @@ namespace Prosoft.Rpc
                 System.Threading.Thread.Sleep(1000);
             } while (connTry++ < 3);
 
-            if (response == null)
-                throw new Exception("Unknown error");
+            if (response == null) throw new Exception("Unknown error");
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK && (method.ReturnType == null || method.ReturnType == typeof(void)))
             {
@@ -112,26 +113,23 @@ namespace Prosoft.Rpc
             return JsonConvert.DeserializeObject(responseContent, method.ReturnType);
         }
 
-        static Dictionary<Type, Type> proxyTypeCache = new Dictionary<Type, Type>();
+        static readonly Dictionary<Type, Type> proxyTypeCache = new Dictionary<Type, Type>();
 
-        static AssemblyName assemblyName = new AssemblyName("SimpleRpc.ProxyAssembly");
-        static AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
-        static ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
+        static readonly AssemblyName assemblyName = new AssemblyName("Prosoft.Rpc.ProxyAssembly");
+        static readonly AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
+        static readonly ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
         public static Type GetProxyObjectType(Type serviceType)
         {
-            Type proxyType;
-
-            if (!proxyTypeCache.TryGetValue(serviceType, out proxyType))
+            if (!proxyTypeCache.TryGetValue(serviceType, out var proxyType))
             {
                 var invokeMethod = typeof(ProxyObject).GetMethod("Invoke", BindingFlags.Instance | BindingFlags.NonPublic);
 
-                var tb = moduleBuilder.DefineType(serviceType.Name + new Random().Next(100000, 999999) + "Proxy", TypeAttributes.Public, typeof(ProxyObject), new Type[] { serviceType });
+                var typeBuilder = moduleBuilder.DefineType(serviceType.Name + new Random().Next(100000, 999999) + "Proxy", TypeAttributes.Public, typeof(ProxyObject), new Type[] { serviceType });
 
-                ConstructorBuilder ctor = tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                    new[] { typeof(object), typeof(object), typeof(object) });
+                ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new[] { typeof(object), typeof(object), typeof(object) });
 
-                ILGenerator ctorIlGen = ctor.GetILGenerator();
+                ILGenerator ctorIlGen = constructorBuilder.GetILGenerator();
                 ctorIlGen.Emit(OpCodes.Ldarg_0);
                 ctorIlGen.Emit(OpCodes.Ldarg_1);
                 ctorIlGen.Emit(OpCodes.Ldarg_2);
@@ -139,71 +137,71 @@ namespace Prosoft.Rpc
                 ctorIlGen.Emit(OpCodes.Call, typeof(ProxyObject).GetConstructor(new[] { typeof(object), typeof(object), typeof(object) }));
                 ctorIlGen.Emit(OpCodes.Ret);
 
-                MethodInfo[] methods = serviceType.GetMethods();
+                var methods = serviceType.GetMethods();
 
                 for (int j = 0; j < methods.Length; j++)
                 {
-                    MethodInfo m = methods[j];
-                    List<Type> parameterTypes = new List<Type>();
+                    var methodInfo = methods[j];
+                    var parameterTypes = new List<Type>();
 
-                    ParameterInfo[] parameters = m.GetParameters();
+                    var parameters = methodInfo.GetParameters();
 
                     for (int i = 0; i < parameters.Length; i++)
                     {
-                        ParameterInfo p = parameters[i];
-                        parameterTypes.Add(p.ParameterType);
+                        var parameter = parameters[i];
+                        parameterTypes.Add(parameter.ParameterType);
                     }
 
-                    var mb = tb.DefineMethod(m.Name, MethodAttributes.Public | MethodAttributes.Virtual, m.ReturnType, parameterTypes.ToArray());
+                    var methodBuilder = typeBuilder.DefineMethod(methodInfo.Name, MethodAttributes.Public | MethodAttributes.Virtual, methodInfo.ReturnType, parameterTypes.ToArray());
 
-                    var ilgen = mb.GetILGenerator();
+                    var ilGenerator = methodBuilder.GetILGenerator();
 
-                    ilgen.Emit(OpCodes.Nop);
+                    ilGenerator.Emit(OpCodes.Nop);
                     // Parameter: object this
-                    ilgen.Emit(OpCodes.Ldarg_0);
+                    ilGenerator.Emit(OpCodes.Ldarg_0);
                     // Parameter: string method
-                    ilgen.Emit(OpCodes.Ldstr, m.Name);
+                    ilGenerator.Emit(OpCodes.Ldstr, methodInfo.Name);
 
                     if (parameterTypes.Count == 0)
                     {
-                        ilgen.Emit(OpCodes.Ldnull);
+                        ilGenerator.Emit(OpCodes.Ldnull);
                     }
                     else
                     {
-                        ilgen.Emit(OpCodes.Ldc_I4, parameterTypes.Count);
-                        ilgen.Emit(OpCodes.Newarr, typeof(object));
+                        ilGenerator.Emit(OpCodes.Ldc_I4, parameterTypes.Count);
+                        ilGenerator.Emit(OpCodes.Newarr, typeof(object));
 
                         for (int i = 0; i < parameterTypes.Count; i++)
                         {
-                            ilgen.Emit(OpCodes.Dup);
-                            ilgen.Emit(OpCodes.Ldc_I4, i);
+                            ilGenerator.Emit(OpCodes.Dup);
+                            ilGenerator.Emit(OpCodes.Ldc_I4, i);
 
-                            ilgen.Emit(OpCodes.Ldarg, (short)i + 1);
+                            ilGenerator.Emit(OpCodes.Ldarg, (short)i + 1);
 
                             if (parameterTypes[i].IsValueType)
                             {
-                                ilgen.Emit(OpCodes.Box, parameterTypes[i]);
+                                ilGenerator.Emit(OpCodes.Box, parameterTypes[i]);
                             }
 
-                            ilgen.Emit(OpCodes.Stelem_Ref);
+                            ilGenerator.Emit(OpCodes.Stelem_Ref);
                         }
                     }
 
-                    ilgen.Emit(OpCodes.Call, invokeMethod);
+                    ilGenerator.Emit(OpCodes.Call, invokeMethod);
 
-                    if (m.ReturnType == typeof(void))
+                    if (methodInfo.ReturnType == typeof(void))
                     {
-                        ilgen.Emit(OpCodes.Pop);
+                        ilGenerator.Emit(OpCodes.Pop);
                     }
-                    else if (m.ReturnType.IsValueType)
+                    else if (methodInfo.ReturnType.IsValueType)
                     {
-                        ilgen.Emit(OpCodes.Unbox_Any, m.ReturnType);
+                        ilGenerator.Emit(OpCodes.Unbox_Any, methodInfo.ReturnType);
                     }
 
-                    ilgen.Emit(OpCodes.Ret);
+                    ilGenerator.Emit(OpCodes.Ret);
                 }
 
-                proxyTypeCache[serviceType] = proxyType = tb.CreateTypeInfo().AsType();
+                proxyTypeCache[serviceType] = proxyType = typeBuilder.CreateTypeInfo().AsType();
             }
 
             return proxyType;

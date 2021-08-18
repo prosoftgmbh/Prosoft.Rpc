@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Prosoft.Rpc
 {
@@ -23,8 +20,7 @@ namespace Prosoft.Rpc
         {
             Type contractType = typeof(T);
 
-            if (!contractType.IsInterface)
-                throw new ArgumentException("Generic must be of type interface");
+            if (!contractType.IsInterface) throw new ArgumentException("Generic must be of type interface");
 
             var proxyType = ProxyObject.GetProxyObjectType(contractType);
 
