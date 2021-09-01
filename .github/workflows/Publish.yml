@@ -1,0 +1,30 @@
+name: Build and publish
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push events but only for the master branch
+  push:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release
+        
+      - name: Pack
+        run: dotnet pack Prosoft.Rpc/Prosoft.Rpc.csproj -c Release
+        
+      - name: Push
+        run: dotnet nuget push Prosoft.Rpc/bin/Release/Prosoft.Rpc.*.nupkg -s https://nuget.pkg.github.com/prosoftgmbh/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
