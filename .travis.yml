@@ -1,9 +1,0 @@
-language: csharp
-solution: Prosoft.Rpc.sln
-mono: none
-dotnet: 5.0
-script:
- - dotnet restore
- - dotnet build -c Release
- - dotnet pack Prosoft.Rpc/Prosoft.Rpc.csproj -c Release
- - dotnet nuget push Prosoft.Rpc/bin/Release/Prosoft.Rpc.*.nupkg -s https://nuget.pkg.github.com/prosoftgmbh/index.json --api-key $GITHUB_TOKEN --skip-duplicate
