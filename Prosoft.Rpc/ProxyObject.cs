@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -33,7 +32,7 @@ namespace Prosoft.Rpc
 
             if (parameters != null)
             {
-                contentData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(parameters));
+                contentData = Utf8Json.JsonSerializer.Serialize(parameters);
             }
 
             var connTry = 0;
@@ -94,23 +93,28 @@ namespace Prosoft.Rpc
                 return null;
             }
 
-            string responseContent = null;
+            byte[] responseData = null;
 
             using (var stream = response.GetResponseStream())
             {
-                var reader = new StreamReader(stream);
-                responseContent = reader.ReadToEnd();
+                using (var ms = new MemoryStream())
+                {
+                    stream.CopyTo(ms);
+                    responseData = ms.ToArray();
+                }
             }
 
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
                 response.Dispose();
-                throw new Exception(responseContent);
+                throw new Exception(Encoding.UTF8.GetString(responseData));
             }
 
             response.Dispose();
 
-            return JsonConvert.DeserializeObject(responseContent, method.ReturnType);
+            if (response == null) return null;
+
+            return Utf8Json.JsonSerializer.NonGeneric.Deserialize(method.ReturnType, responseData);
         }
 
         static readonly Dictionary<Type, Type> proxyTypeCache = new Dictionary<Type, Type>();

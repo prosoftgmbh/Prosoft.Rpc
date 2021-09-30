@@ -2,8 +2,6 @@
 using System.IO;
 using System.Reflection;
 using Nancy;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Prosoft.Rpc.Demo
 {
@@ -40,7 +38,7 @@ namespace Prosoft.Rpc.Demo
                     }
                     else
                     {
-                        return Nancy.FormatterExtensions.AsText(Response, JsonConvert.SerializeObject(invokeResult), "application/json");
+                        return Nancy.FormatterExtensions.FromStream(Response, invokeResult, "application/json");
                     }
                 }
                 catch (TargetInvocationException e)

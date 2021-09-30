@@ -16,7 +16,7 @@ namespace Prosoft.Rpc.Demo
 
             var service = Prosoft.Rpc.Client.Create<IDemo>();
 
-            Console.WriteLine(service.Hello("Jörg"));
+            Console.WriteLine(service.Hello("Jörg", 45, new HelloRequest() { Name = "test", Age = 34 }).Name);
 
             Console.ReadKey();
         }

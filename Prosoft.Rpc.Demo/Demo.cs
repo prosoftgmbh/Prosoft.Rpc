@@ -4,9 +4,13 @@ namespace Prosoft.Rpc.Demo
 {
     public class Demo : IDemo
     {
-        public string Hello(string name)
+        public HelloResponse Hello(string name, int age, HelloRequest helloRequest)
         {
-            return "Hello " + name;
+            return new HelloResponse()
+            {
+                Name = "Hello " + name,
+                Age = age  + 1
+            };
         }
     }
 }
