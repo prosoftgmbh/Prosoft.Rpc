@@ -32,6 +32,13 @@ namespace Prosoft.Rpc
             var connTry = 0;
             HttpWebResponse response;
 
+            byte[] contentData = null;
+
+            if (parameters != null)
+            {
+                contentData = Utf8Json.JsonSerializer.Serialize(parameters);
+            }
+
             do
             {
                 response = null;
@@ -45,14 +52,19 @@ namespace Prosoft.Rpc
                     request.Headers.Add("Cookie", "sessionId=" + _sessionId);
                 }
 
-                if (parameters != null)
+                if (contentData != null)
                 {
                     request.ContentType = "application/json";
+                    request.ContentLength = contentData.Length;
 
                     using (var requestStream = request.GetRequestStream())
                     {
-                        Utf8Json.JsonSerializer.Serialize(requestStream, parameters);
+                        requestStream.Write(contentData, 0, contentData.Length);
                     }
+                }
+                else
+                {
+                    request.ContentLength = 0;
                 }
   
                 try
