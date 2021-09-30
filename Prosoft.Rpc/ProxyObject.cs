@@ -28,12 +28,6 @@ namespace Prosoft.Rpc
         {
             var method = _contractType.GetMethod(methodName);
             var requestUri = $"{_uri}?name={_contractType.FullName}&method={methodName}";
-            byte[] contentData = null;
-
-            if (parameters != null)
-            {
-                contentData = Utf8Json.JsonSerializer.Serialize(parameters);
-            }
 
             var connTry = 0;
             HttpWebResponse response;
@@ -51,21 +45,16 @@ namespace Prosoft.Rpc
                     request.Headers.Add("Cookie", "sessionId=" + _sessionId);
                 }
 
-                if (contentData != null)
+                if (parameters != null)
                 {
                     request.ContentType = "application/json";
-                    request.ContentLength = contentData.Length;
 
                     using (var requestStream = request.GetRequestStream())
                     {
-                        requestStream.Write(contentData, 0, contentData.Length);
+                        Utf8Json.JsonSerializer.Serialize(requestStream, parameters);
                     }
                 }
-                else
-                {
-                    request.ContentLength = 0;
-                }
-
+  
                 try
                 {
                     response = (HttpWebResponse)request.GetResponse();
@@ -86,35 +75,39 @@ namespace Prosoft.Rpc
 
             if (response == null) throw new Exception("Unknown error");
 
-            if (response.StatusCode == System.Net.HttpStatusCode.OK && (method.ReturnType == null || method.ReturnType == typeof(void)))
+            if (response.StatusCode == HttpStatusCode.OK)
             {
-                response.Dispose();
+                object responseObject = null;
 
-                return null;
-            }
-
-            byte[] responseData = null;
-
-            using (var stream = response.GetResponseStream())
-            {
-                using (var ms = new MemoryStream())
+                if (method.ReturnType != null && method.ReturnType != typeof(void))
                 {
-                    stream.CopyTo(ms);
-                    responseData = ms.ToArray();
+                    using (var stream = response.GetResponseStream())
+                    {
+                        responseObject = Utf8Json.JsonSerializer.NonGeneric.Deserialize(method.ReturnType, stream);
+                    }
                 }
-            }
 
-            if (response.StatusCode != System.Net.HttpStatusCode.OK)
-            {
                 response.Dispose();
+
+                return responseObject;
+            }
+            else
+            {
+                byte[] responseData = null;
+
+                using (var stream = response.GetResponseStream())
+                {
+                    using (var ms = new MemoryStream())
+                    {
+                        stream.CopyTo(ms);
+                        responseData = ms.ToArray();
+                    }
+                }
+
+                response.Dispose();
+
                 throw new Exception(Encoding.UTF8.GetString(responseData));
             }
-
-            response.Dispose();
-
-            if (response == null) return null;
-
-            return Utf8Json.JsonSerializer.NonGeneric.Deserialize(method.ReturnType, responseData);
         }
 
         static readonly Dictionary<Type, Type> proxyTypeCache = new Dictionary<Type, Type>();

@@ -12,7 +12,7 @@ namespace Prosoft.Rpc
 
         readonly static Dictionary<Type, Type> knownServiceTypes = new Dictionary<Type, Type>();
 
-        public static Stream Invoke(object serviceInstance, string methodName, Stream parameterStream)
+        public static byte[] Invoke(object serviceInstance, string methodName, Stream parameterStream)
         {
             var type = serviceInstance.GetType();
 
@@ -51,13 +51,7 @@ namespace Prosoft.Rpc
 
             if (methodInfo.ReturnType == typeof(void)) return null;
 
-            var ms = new MemoryStream();
-
-            Utf8Json.JsonSerializer.NonGeneric.Serialize(methodInfo.ReturnType, ms, result);
-
-            ms.Seek(0, SeekOrigin.Begin);
-
-            return ms;
+            return Utf8Json.JsonSerializer.NonGeneric.Serialize(methodInfo.ReturnType, result);
         }
 
         public static bool TryCreateInstance(string typeName, out object instance)

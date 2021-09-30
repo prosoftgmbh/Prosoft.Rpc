@@ -30,7 +30,7 @@ namespace Prosoft.Rpc.Demo
 
                 try
                 {
-                    var invokeResult = Prosoft.Rpc.Host.Invoke(instance, methodName, Request.Body);
+                    byte[] invokeResult = Prosoft.Rpc.Host.Invoke(instance, methodName, Request.Body);
 
                     if (invokeResult == null)
                     {
@@ -38,7 +38,14 @@ namespace Prosoft.Rpc.Demo
                     }
                     else
                     {
-                        return Nancy.FormatterExtensions.FromStream(Response, invokeResult, "application/json");
+                        return new Response()
+                        {
+                            ContentType = "application/json",
+                            Contents = s =>
+                            {
+                                s.Write(invokeResult, 0, invokeResult.Length);
+                            }
+                        };
                     }
                 }
                 catch (TargetInvocationException e)
