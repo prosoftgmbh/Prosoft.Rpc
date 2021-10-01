@@ -4,13 +4,12 @@
     <TargetFrameworks>net5.0;net461</TargetFrameworks>
     <Company>ProSoft Software-Entwicklung GmbH</Company>
     <RepositoryUrl>https://github.com/prosoftgmbh/Prosoft.Rpc</RepositoryUrl>
-    <Version>1.0.11</Version>
-    <AssemblyVersion>1.0.11.0</AssemblyVersion>
-    <FileVersion>1.0.11.0</FileVersion>
+    <Version>1.0.12</Version>
+    <AssemblyVersion>1.0.12.0</AssemblyVersion>
+    <FileVersion>1.0.12.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Utf8Json" Version="1.3.7" />
   </ItemGroup>
 

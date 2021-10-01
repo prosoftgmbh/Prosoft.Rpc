@@ -36,7 +36,36 @@ namespace Prosoft.Rpc
 
             if (parameters != null)
             {
-                contentData = Utf8Json.JsonSerializer.Serialize(parameters);
+                var totalParameterLength = 0;
+                var parameterCount = parameters.Length;
+
+                var parameterData = new byte[parameterCount][];
+
+                for (int i = 0; i < parameterCount; i++)
+                {
+                    parameterData[i] = Utf8Json.JsonSerializer.Serialize(parameters[i]);
+
+                    totalParameterLength += parameterData[i].Length;
+                }
+
+                contentData = new byte[4 + 4 * parameterCount + totalParameterLength];
+
+                var currentOffset = 0;
+
+                BitConverter.GetBytes(parameterCount).CopyTo(contentData, 0);
+                currentOffset += 4;
+
+                for (int i = 0; i < parameterCount; i++)
+                {
+                    var currentParameterLength = parameterData[i].Length;
+
+                    BitConverter.GetBytes(currentParameterLength).CopyTo(contentData, currentOffset);
+                    currentOffset += 4;
+
+                    parameterData[i].CopyTo(contentData, currentOffset);
+
+                    currentOffset += parameterData[i].Length;
+                }
             }
 
             do

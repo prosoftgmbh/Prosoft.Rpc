@@ -28,9 +28,18 @@ namespace Prosoft.Rpc.Demo
                 if (!Prosoft.Rpc.Host.TryCreateInstance(service, out object instance))
                     return 404;
 
+                byte[] requestData = null;
+
+                if (Request.Body.Length != 0)
+                {
+                    requestData = new byte[Request.Body.Length];
+
+                    Request.Body.Read(requestData, 0, requestData.Length);
+                }
+
                 try
                 {
-                    byte[] invokeResult = Prosoft.Rpc.Host.Invoke(instance, methodName, Request.Body);
+                    byte[] invokeResult = Prosoft.Rpc.Host.Invoke(instance, methodName, requestData);
 
                     if (invokeResult == null)
                     {

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Prosoft.Rpc
 {
@@ -12,7 +10,7 @@ namespace Prosoft.Rpc
 
         readonly static Dictionary<Type, Type> knownServiceTypes = new Dictionary<Type, Type>();
 
-        public static byte[] Invoke(object serviceInstance, string methodName, Stream parameterStream)
+        public static byte[] Invoke(object serviceInstance, string methodName, byte[] requestData)
         {
             var type = serviceInstance.GetType();
 
@@ -22,28 +20,33 @@ namespace Prosoft.Rpc
 
             var parameters = new object[methodParameters.Length];
 
-            if (parameterStream.Length == 0)
+            if (requestData == null)
             {
                 if (parameters.Length != 0) throw new Exception("Parameter count mismatch.");
             }
             else
             {
-                var jsonReader = new JsonTextReader(new StreamReader(parameterStream));
+                var payloadParameterCount = BitConverter.ToInt32(requestData, 0);
 
-                var jarray = JArray.Load(jsonReader);
+                if (payloadParameterCount != methodParameters.Length) throw new Exception("Parameter count mismatch");
 
-                if (jarray.Count != methodParameters.Length) throw new Exception("Parameter count mismatch");
+                var currentOffset = 4;
 
                 for (int i = 0; i < methodParameters.Length; i++)
                 {
+                    var currentParameterLength = BitConverter.ToInt32(requestData, currentOffset);
+                    currentOffset += 4;
+
                     try
                     {
-                        parameters[i] = jarray[i].ToObject(methodParameters[i].ParameterType);
+                        parameters[i] = Utf8Json.JsonSerializer.NonGeneric.Deserialize(methodParameters[i].ParameterType, requestData, currentOffset);
                     }
                     catch
                     {
                         throw new Exception("Parameter type mismatch");
                     }
+
+                    currentOffset += currentParameterLength;
                 }
             }
 
