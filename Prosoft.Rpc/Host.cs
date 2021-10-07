@@ -41,9 +41,9 @@ namespace Prosoft.Rpc
                     {
                         parameters[i] = Utf8Json.JsonSerializer.NonGeneric.Deserialize(methodParameters[i].ParameterType, requestData, currentOffset);
                     }
-                    catch
+                    catch(Exception e)
                     {
-                        throw new Exception("Parameter type mismatch");
+                        throw new Exception("Parameter type mismatch", e);
                     }
 
                     currentOffset += currentParameterLength;
